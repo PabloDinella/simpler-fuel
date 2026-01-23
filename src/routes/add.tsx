@@ -64,25 +64,25 @@ export default function AddEntry() {
 
   if (!settings) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-lg text-gray-900 dark:text-white">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6">
-          <Link to="/" className="text-blue-600 hover:text-blue-800 mr-4">
+          <Link to="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mr-4">
             ← Back
           </Link>
-          <h1 className="text-2xl font-bold">Add Fuel Entry</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add Fuel Entry</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Date
             </label>
             <input
@@ -91,12 +91,12 @@ export default function AddEntry() {
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Odometer ({getDistanceUnitLabel(settings.distanceUnit)})
             </label>
             <input
@@ -108,12 +108,12 @@ export default function AddEntry() {
               required
               min="0"
               placeholder={`e.g., 10000`}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label htmlFor="fuel" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="fuel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Fuel Amount ({getVolumeUnitLabel(settings.volumeUnit)})
             </label>
             <input
@@ -125,12 +125,12 @@ export default function AddEntry() {
               required
               min="0"
               placeholder={`e.g., 40`}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Notes (optional)
             </label>
             <textarea
@@ -139,14 +139,14 @@ export default function AddEntry() {
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="e.g., Full tank, Shell station"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {loading ? 'Saving...' : 'Save Entry'}
           </button>

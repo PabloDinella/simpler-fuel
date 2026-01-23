@@ -38,29 +38,29 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
+        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">
           ⛽ Simpler Fuel
         </h1>
         
-        <h2 className="text-xl font-semibold text-center mb-6 text-gray-700">
+        <h2 className="text-xl font-semibold text-center mb-6 text-gray-700 dark:text-gray-300">
           {isSignUp ? 'Create Account' : 'Sign In'}
         </h2>
 
         {hasLocal && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="mb-6 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-blue-900">
+                <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">
                   Sync your local data
                 </h3>
-                <p className="mt-1 text-sm text-blue-700">
+                <p className="mt-1 text-sm text-blue-700 dark:text-blue-200">
                   {isSignUp ? 'Your existing fuel entries will be automatically backed up to the cloud when you create an account.' : 'Sign in to sync your local entries across all your devices.'}
                 </p>
               </div>
@@ -70,7 +70,7 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email
             </label>
             <input
@@ -79,13 +79,13 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Password
             </label>
             <input
@@ -95,13 +95,13 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded">
               {error}
             </div>
           )}
@@ -109,7 +109,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
           </button>
@@ -121,7 +121,7 @@ export default function Login() {
               setIsSignUp(!isSignUp);
               setError('');
             }}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
           >
             {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
           </button>
@@ -130,7 +130,7 @@ export default function Login() {
         <div className="mt-4 text-center">
           <button
             onClick={() => navigate({ to: '/' })}
-            className="text-gray-600 hover:text-gray-800 text-sm"
+            className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 text-sm"
           >
             ← Continue without account
           </button>
