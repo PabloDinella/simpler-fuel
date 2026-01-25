@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { getDatabase, Settings } from '../db';
+import { getDatabase, Settings, FuelEntry } from '../db';
 import { getAuthState } from '../lib/auth';
 import {
   convertDistanceToKm,
   convertVolumeToLiters,
+  convertDistanceFromKm,
   getDistanceUnitLabel,
-  getVolumeUnitLabel
+  getVolumeUnitLabel,
+  formatNumber
 } from '../lib/units';
 
 export default function AddEntry() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [lastOdometer, setLastOdometer] = useState<number | null>(null);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [odometer, setOdometer] = useState('');
   const [fuel, setFuel] = useState('');
@@ -22,7 +25,21 @@ export default function AddEntry() {
     getDatabase().then(async (db) => {
       const userSettings = await db.settings.findOne().exec();
       if (userSettings) {
-        setSettings(userSettings.toJSON() as Settings);
+        const settingsData = userSettings.toJSON() as Settings;
+        setSettings(settingsData);
+        
+        // Get the last fuel entry to prefill odometer
+        const lastEntry = await db.fuel_entries
+          .findOne()
+          .sort({ date: 'desc' })
+          .exec();
+        
+        if (lastEntry) {
+          const entry = lastEntry.toJSON() as FuelEntry;
+          const lastOdometerInUserUnits = convertDistanceFromKm(entry.odometer_km, settingsData.distanceUnit);
+          setLastOdometer(lastOdometerInUserUnits);
+          setOdometer(lastOdometerInUserUnits.toString());
+        }
       }
     });
   }, []);
@@ -52,8 +69,8 @@ export default function AddEntry() {
         user_id: authState.user?.id // Optional - only set if logged in
       });
 
-      // Navigate to history
-      navigate({ to: '/history' });
+      // Navigate back to dashboard
+      navigate({ to: '/' });
     } catch (error) {
       console.error('Error adding entry:', error);
       alert('Failed to add entry. Please try again.');
@@ -73,7 +90,7 @@ export default function AddEntry() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center mb-6">
+        <div className="flex items-center mb-6 pt-6">
           <Link to="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mr-4">
             ← Back
           </Link>
@@ -110,6 +127,11 @@ export default function AddEntry() {
               placeholder={`e.g., 10000`}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            {lastOdometer !== null && (
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Last recorded: {formatNumber(lastOdometer)} {getDistanceUnitLabel(settings.distanceUnit)}
+              </p>
+            )}
           </div>
 
           <div>

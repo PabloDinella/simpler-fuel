@@ -73,7 +73,7 @@ export default function History() {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
+          <div className="flex items-center pt-6">
             <Link to="/" className="text-blue-600 hover:text-blue-800 mr-4">
               ← Back
             </Link>

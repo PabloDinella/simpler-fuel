@@ -13,10 +13,7 @@ export async function migrateLocalDataToCloud(userId: string): Promise<void> {
     const localEntries = await db.fuel_entries
       .find({
         selector: {
-          $or: [
-            { user_id: { $exists: false } },
-            { user_id: null }
-          ]
+          user_id: { $exists: false }
         }
       })
       .exec();
@@ -56,19 +53,15 @@ export async function hasLocalEntries(): Promise<boolean> {
   try {
     const db = await getDatabase();
     
-    const count = await db.fuel_entries
+    const entries = await db.fuel_entries
       .find({
         selector: {
-          $or: [
-            { user_id: { $exists: false } },
-            { user_id: null }
-          ]
+          user_id: { $exists: false }
         }
       })
-      .count()
       .exec();
 
-    return count > 0;
+    return entries.length > 0;
   } catch (error) {
     console.error('[Migration] Error checking local entries:', error);
     return false;

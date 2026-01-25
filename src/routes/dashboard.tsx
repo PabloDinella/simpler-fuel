@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { signOut, getAuthState } from '../lib/auth';
 import { getDatabase, FuelEntry, Settings } from '../db';
+import { IconGasStation, IconPlus, IconSettings, IconTrash } from '@tabler/icons-react';
 import {
   convertDistanceFromKm,
   convertVolumeFromLiters,
@@ -103,10 +104,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 shadow">
+      <header className="bg-white dark:bg-gray-800 shadow pt-6">
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">⛽ Simpler Fuel</h1>
+            <IconGasStation size={32} className="text-blue-600 dark:text-blue-400" />
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Simpler Fuel</h1>
             {!isLoggedIn && (
               <span className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-2 py-1 rounded-full">
                 Local Only
@@ -138,7 +140,9 @@ export default function Dashboard() {
             to="/add"
             className="bg-blue-600 dark:bg-blue-700 text-white p-6 rounded-lg shadow hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
-            <div className="text-3xl mb-2">➕</div>
+            <div className="mb-2">
+              <IconPlus size={32} />
+            </div>
             <h2 className="text-lg font-semibold">Add Entry</h2>
             <p className="text-sm text-blue-100 dark:text-blue-200 mt-1">Record new fuel entry</p>
           </Link>
@@ -147,7 +151,9 @@ export default function Dashboard() {
             to="/settings"
             className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
           >
-            <div className="text-3xl mb-2">⚙️</div>
+            <div className="mb-2 text-gray-900 dark:text-white">
+              <IconSettings size={32} />
+            </div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Settings</h2>
             <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">Units & preferences</p>
           </Link>
@@ -249,7 +255,7 @@ export default function Dashboard() {
                         className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 ml-4"
                         title="Delete entry"
                       >
-                        🗑️
+                        <IconTrash size={20} />
                       </button>
                     </div>
                   </div>

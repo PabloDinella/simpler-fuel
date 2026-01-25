@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { signIn, signUp } from '../lib/auth';
 import { hasLocalEntries } from '../lib/migration';
 import { useNavigate } from '@tanstack/react-router';
+import { IconGasStation } from '@tabler/icons-react';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -40,9 +41,12 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 px-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-6 text-gray-800 dark:text-white">
-          ⛽ Simpler Fuel
-        </h1>
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <IconGasStation size={32} className="text-blue-600 dark:text-blue-400" />
+          <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+            Simpler Fuel
+          </h1>
+        </div>
         
         <h2 className="text-xl font-semibold text-center mb-6 text-gray-700 dark:text-gray-300">
           {isSignUp ? 'Create Account' : 'Sign In'}
