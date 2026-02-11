@@ -3,6 +3,7 @@ import Login from './login';
 import Dashboard from './dashboard';
 import AddEntry from './add';
 import Settings from './settings';
+import DeleteAccount from './delete-account';
 
 // Root route
 export const rootRoute = createRootRoute({
@@ -53,10 +54,17 @@ export const settingsRoute = createRoute({
   component: Settings
 });
 
+export const deleteAccountRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/delete-account',
+  component: DeleteAccount
+});
+
 // Build route tree
 export const routeTree = rootRoute.addChildren([
   loginRoute,
   dashboardRoute,
   addRoute,
-  settingsRoute
+  settingsRoute,
+  deleteAccountRoute
 ]);

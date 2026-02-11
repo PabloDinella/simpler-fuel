@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:web": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "pages:dev": "wrangler pages dev dist",
+    "pages:deploy": "npm run build:web && wrangler pages deploy dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.91.0",

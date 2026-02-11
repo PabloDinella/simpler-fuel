@@ -28,3 +28,7 @@ dist-ssr
 *.sln
 *.sw?
 src-tauri/gen/
+
+# Cloudflare
+.wrangler/
+wrangler.toml.backup

@@ -96,8 +96,15 @@ You have the following rights regarding your personal data:
 
 ### Deletion
 - You can delete individual fuel entries
-- You can delete your entire account and all associated data by contacting us
+- You can request account deletion at: **https://simplerfuel.app/delete-account**
+- You can also delete your entire account and all associated data by contacting us at support@simplerfuel.app
 - Upon account deletion, all your data will be permanently removed from our servers within 30 days
+
+For detailed information about account deletion, please visit our [Account Deletion Page](https://simplerfuel.app/delete-account) which provides:
+- Step-by-step instructions for deleting your account
+- Complete list of data types that will be deleted
+- Information about data retention periods
+- Alternative methods to request deletion
 
 ### Data Control
 - **Offline Mode**: You can use the app entirely offline without cloud synchronization
