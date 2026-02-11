@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { getDatabase, Settings, FuelEntry } from '../db';
 import { getAuthState } from '../lib/auth';
 import {
@@ -12,6 +13,7 @@ import {
 } from '../lib/units';
 
 export default function AddEntry() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [lastOdometer, setLastOdometer] = useState<number | null>(null);
@@ -82,7 +84,7 @@ export default function AddEntry() {
   if (!settings) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-lg text-gray-900 dark:text-white">Loading...</div>
+        <div className="text-lg text-gray-900 dark:text-white">{t('common.loading')}</div>
       </div>
     );
   }
@@ -92,15 +94,15 @@ export default function AddEntry() {
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6 pt-6">
           <Link to="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mr-4">
-            ← Back
+            ← {t('nav.back')}
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add Fuel Entry</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('entry.add')}</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Date
+              {t('entry.date')}
             </label>
             <input
               id="date"
@@ -114,7 +116,7 @@ export default function AddEntry() {
 
           <div>
             <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Odometer ({getDistanceUnitLabel(settings.distanceUnit)})
+              {t('entry.odometer')} ({getDistanceUnitLabel(settings.distanceUnit)})
             </label>
             <input
               id="odometer"
@@ -136,7 +138,7 @@ export default function AddEntry() {
 
           <div>
             <label htmlFor="fuel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Fuel Amount ({getVolumeUnitLabel(settings.volumeUnit)})
+              {t('entry.fuel')} ({getVolumeUnitLabel(settings.volumeUnit)})
             </label>
             <input
               id="fuel"
@@ -153,14 +155,14 @@ export default function AddEntry() {
 
           <div>
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Notes (optional)
+              {t('entry.notesOptional')}
             </label>
             <textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              placeholder="e.g., Full tank, Shell station"
+              placeholder={t('entry.notesPlaceholder')}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -170,7 +172,7 @@ export default function AddEntry() {
             disabled={loading}
             className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {loading ? 'Saving...' : 'Save Entry'}
+            {loading ? t('entry.saving') : t('entry.save')}
           </button>
         </form>
       </div>

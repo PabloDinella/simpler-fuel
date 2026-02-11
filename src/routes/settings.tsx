@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { getDatabase, Settings } from "../db";
 import { signOut, getAuthState } from "../lib/auth";
 import type { DistanceUnit, VolumeUnit, ConsumptionFormat } from "../lib/units";
@@ -8,6 +9,7 @@ import { addRxPlugin } from "rxdb";
 addRxPlugin(RxDBUpdatePlugin);
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const authState = getAuthState();
   const isLoggedIn = !!authState.user;
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -43,7 +45,7 @@ export default function SettingsPage() {
           },
         });
       }
-      alert("Settings saved successfully!");
+      alert(t('settings.saveSettings') + ' ' + t('common.success').toLowerCase() + '!');
     } catch (error) {
       console.error("Error saving settings:", error);
       alert("Failed to save settings");
@@ -53,7 +55,7 @@ export default function SettingsPage() {
   };
 
   const handleSignOut = async () => {
-    if (confirm("Are you sure you want to sign out?")) {
+    if (confirm(t('settings.confirmSignOut'))) {
       try {
         await signOut();
       } catch (error) {
@@ -65,7 +67,7 @@ export default function SettingsPage() {
   if (loading || !settings) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-lg text-gray-900 dark:text-white">Loading...</div>
+        <div className="text-lg text-gray-900 dark:text-white">{t('common.loading')}</div>
       </div>
     );
   }
@@ -78,23 +80,23 @@ export default function SettingsPage() {
             to="/"
             className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mr-4"
           >
-            ← Back
+            ← {t('nav.back')}
           </Link>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Settings
+            {t('settings.title')}
           </h1>
         </div>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Appearance
+              {t('settings.appearance')}
             </h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Theme
+                  {t('settings.theme')}
                 </label>
                 <select
                   value={settings.theme}
@@ -106,12 +108,12 @@ export default function SettingsPage() {
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="system">System</option>
+                  <option value="light">{t('settings.themeLight')}</option>
+                  <option value="dark">{t('settings.themeDark')}</option>
+                  <option value="system">{t('settings.themeSystem')}</option>
                 </select>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Choose your preferred color scheme
+                  {t('settings.themeDescription')}
                 </p>
               </div>
             </div>
@@ -119,13 +121,13 @@ export default function SettingsPage() {
 
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Units & Display
+              {t('settings.unitsDisplay')}
             </h2>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Distance Unit
+                  {t('settings.distanceUnit')}
                 </label>
                 <select
                   value={settings.distanceUnit}
@@ -137,14 +139,14 @@ export default function SettingsPage() {
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="km">Kilometers (km)</option>
-                  <option value="mi">Miles (mi)</option>
+                  <option value="km">{t('units.km')}</option>
+                  <option value="mi">{t('units.mi')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Volume Unit
+                  {t('settings.volumeUnit')}
                 </label>
                 <select
                   value={settings.volumeUnit}
@@ -156,15 +158,15 @@ export default function SettingsPage() {
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="L">Liters (L)</option>
-                  <option value="gal_us">Gallons US (gal)</option>
-                  <option value="gal_uk">Gallons UK (gal)</option>
+                  <option value="L">{t('units.liters')}</option>
+                  <option value="gal_us">{t('units.galUS')}</option>
+                  <option value="gal_uk">{t('units.galUK')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Consumption Display Format
+                  {t('settings.consumptionFormat')}
                 </label>
                 <select
                   value={settings.consumptionFormat}
@@ -176,18 +178,18 @@ export default function SettingsPage() {
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="km_per_L">Kilometers per Liter (km/L)</option>
+                  <option value="km_per_L">{t('units.kmPerL')}</option>
                   <option value="L_per_100km">
-                    Liters per 100km (L/100km)
+                    {t('units.lPer100km')}
                   </option>
-                  <option value="mpg_us">Miles per Gallon US (mpg)</option>
-                  <option value="mpg_uk">Miles per Gallon UK (mpg)</option>
+                  <option value="mpg_us">{t('units.mpgUS')}</option>
+                  <option value="mpg_uk">{t('units.mpgUK')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Language
+                  {t('settings.language')}
                 </label>
                 <select
                   value={settings.language}
@@ -198,7 +200,7 @@ export default function SettingsPage() {
                 >
                   <option value="en">English</option>
                   <option value="es">Español</option>
-                  <option value="fr">Français</option>
+                  <option value="pt">Português</option>
                 </select>
               </div>
             </div>
@@ -209,12 +211,12 @@ export default function SettingsPage() {
             disabled={saving}
             className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {saving ? "Saving..." : "Save Settings"}
+            {saving ? t('entry.saving') : t('settings.saveSettings')}
           </button>
 
           <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Account
+              {t('settings.account')}
             </h2>
 
             {!isLoggedIn ? (
@@ -236,11 +238,10 @@ export default function SettingsPage() {
                     </div>
                     <div className="ml-3 flex-1">
                       <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                        Currently using Local Only mode
+                        {t('settings.localOnlyMode')}
                       </h3>
                       <p className="mt-1 text-sm text-blue-700 dark:text-blue-200">
-                        Your data is stored on this device only. Create an
-                        account to enable cloud sync.
+                        {t('settings.localOnlyDesc')}
                       </p>
                     </div>
                   </div>
@@ -251,12 +252,12 @@ export default function SettingsPage() {
                     onClick={() => setShowAccountBenefits(true)}
                     className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
                   >
-                    Create Account & Enable Cloud Sync
+                    {t('settings.createAccountBtn')}
                   </button>
                 ) : (
                   <div className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 space-y-3">
                     <h4 className="font-medium text-gray-900 dark:text-white">
-                      Benefits of creating an account:
+                      {t('settings.accountBenefits')}
                     </h4>
                     <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                       <li className="flex items-start">
@@ -264,7 +265,7 @@ export default function SettingsPage() {
                           ✓
                         </span>
                         <span>
-                          Automatic cloud backup of all your fuel entries
+                          {t('settings.benefit1')}
                         </span>
                       </li>
                       <li className="flex items-start">
@@ -272,7 +273,7 @@ export default function SettingsPage() {
                           ✓
                         </span>
                         <span>
-                          Sync across multiple devices (phone, tablet, computer)
+                          {t('settings.benefit2')}
                         </span>
                       </li>
                       <li className="flex items-start">
@@ -280,7 +281,7 @@ export default function SettingsPage() {
                           ✓
                         </span>
                         <span>
-                          Real-time updates when you add entries on any device
+                          {t('settings.benefit3')}
                         </span>
                       </li>
                       <li className="flex items-start">
@@ -288,7 +289,7 @@ export default function SettingsPage() {
                           ✓
                         </span>
                         <span>
-                          Never lose your data, even if you clear browser cache
+                          {t('settings.benefit4')}
                         </span>
                       </li>
                     </ul>
@@ -297,13 +298,13 @@ export default function SettingsPage() {
                         to="/login"
                         className="block w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 text-center font-medium"
                       >
-                        Sign Up Now
+                        {t('settings.signUpNow')}
                       </Link>
                       <button
                         onClick={() => setShowAccountBenefits(false)}
                         className="w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
                       >
-                        Maybe later
+                        {t('settings.maybeLater')}
                       </button>
                     </div>
                   </div>
@@ -328,10 +329,10 @@ export default function SettingsPage() {
                     </div>
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-green-900 dark:text-green-100">
-                        Cloud sync enabled
+                        {t('settings.cloudSyncEnabled')}
                       </h3>
                       <p className="mt-1 text-sm text-green-700 dark:text-green-200">
-                        Signed in as {authState.user?.email}
+                        {t('settings.signedInAs')} {authState.user?.email}
                       </p>
                     </div>
                   </div>
@@ -340,10 +341,25 @@ export default function SettingsPage() {
                   onClick={handleSignOut}
                   className="w-full bg-red-600 dark:bg-red-700 text-white py-2 px-4 rounded-md hover:bg-red-700 dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 font-medium"
                 >
-                  Sign Out
+                  {t('auth.signOut')}
                 </button>
               </div>
             )}
+          </div>
+
+          <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              {t('settings.dataPrivacy')}
+            </h2>
+            <Link
+              to="/delete-account"
+              className="block w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 text-center font-medium border border-gray-300 dark:border-gray-600"
+            >
+              {t('settings.deleteAccountBtn')}
+            </Link>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">
+              {t('settings.deleteAccountDesc')}
+            </p>
           </div>
         </div>
       </div>

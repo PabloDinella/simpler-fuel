@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { getDatabase, FuelEntry, Settings } from '../db';
 import {
   convertDistanceFromKm,
@@ -12,6 +13,7 @@ import {
 } from '../lib/units';
 
 export default function History() {
+  const { t } = useTranslation();
   const [entries, setEntries] = useState<FuelEntry[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,7 @@ export default function History() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this entry?')) return;
+    if (!confirm(t('entry.confirmDelete'))) return;
 
     try {
       const db = await getDatabase();
@@ -60,7 +62,7 @@ export default function History() {
   if (loading || !settings) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
+        <div className="text-lg">{t('common.loading')}</div>
       </div>
     );
   }
@@ -75,26 +77,26 @@ export default function History() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center pt-6">
             <Link to="/" className="text-blue-600 hover:text-blue-800 mr-4">
-              ← Back
+              ← {t('nav.back')}
             </Link>
-            <h1 className="text-2xl font-bold">Fuel History</h1>
+            <h1 className="text-2xl font-bold">{t('history.title')}</h1>
           </div>
           <Link
             to="/add"
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
           >
-            + Add Entry
+            + {t('nav.addEntry')}
           </Link>
         </div>
 
         {entries.length === 0 ? (
           <div className="bg-white p-8 rounded-lg shadow text-center">
-            <p className="text-gray-600 mb-4">No fuel entries yet</p>
+            <p className="text-gray-600 mb-4">{t('history.noEntries')}</p>
             <Link
               to="/add"
               className="inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
             >
-              Add Your First Entry
+              {t('history.addFirst')}
             </Link>
           </div>
         ) : (
@@ -120,17 +122,17 @@ export default function History() {
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
-                          <span className="font-medium">Odometer:</span>{' '}
+                          <span className="font-medium">{t('entry.odometer')}:</span>{' '}
                           {formatNumber(odometerDisplay)} {getDistanceUnitLabel(settings.distanceUnit)}
                         </div>
                         <div>
-                          <span className="font-medium">Fuel:</span>{' '}
+                          <span className="font-medium">{t('entry.fuel')}:</span>{' '}
                           {formatNumber(fuelDisplay, 3)} {getVolumeUnitLabel(settings.volumeUnit)}
                         </div>
                       </div>
                       {entry.notes && (
                         <div className="mt-2 text-sm text-gray-600">
-                          <span className="font-medium">Notes:</span> {entry.notes}
+                          <span className="font-medium">{t('entry.notes')}:</span> {entry.notes}
                         </div>
                       )}
                     </div>

@@ -5,6 +5,7 @@ import { initAuth, subscribeToAuth, AuthState } from './lib/auth';
 import { initDatabase, getDatabase, Settings } from './db';
 import { setupReplication, stopReplication } from './db/replication';
 import { migrateLocalDataToCloud, hasLocalEntries } from './lib/migration';
+import i18n from './i18n/config';
 
 // Create router instance
 const router = createRouter({ routeTree });
@@ -133,6 +134,32 @@ function App() {
     return () => {
       if (subscription) subscription.unsubscribe();
       mediaQuery.removeEventListener('change', handleChange);
+    };
+  }, [dbReady]);
+
+  // Apply language based on settings - only after database is ready
+  useEffect(() => {
+    if (!dbReady) return;
+
+    let subscription: any;
+
+    getDatabase().then(async (db) => {
+      // Subscribe to language changes
+      subscription = db.settings
+        .findOne()
+        .$
+        .subscribe((doc: any) => {
+          if (doc) {
+            const settings = doc.toJSON() as Settings;
+            i18n.changeLanguage(settings.language);
+          }
+        });
+    }).catch(error => {
+      console.error('[App] Language subscription error:', error);
+    });
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
     };
   }, [dbReady]);
 

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { signIn, signUp } from '../lib/auth';
 import { hasLocalEntries } from '../lib/migration';
 import { useNavigate } from '@tanstack/react-router';
 import { IconGasStation } from '@tabler/icons-react';
 
 export default function Login() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,14 +27,14 @@ export default function Login() {
     try {
       if (isSignUp) {
         await signUp(email, password);
-        alert('Check your email for the confirmation link!');
+        alert(t('auth.checkEmail'));
       } else {
         await signIn(email, password);
         // Auth state change will trigger migration and redirect automatically
         navigate({ to: '/' });
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      setError(err.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -44,12 +46,12 @@ export default function Login() {
         <div className="flex items-center justify-center gap-2 mb-6">
           <IconGasStation size={32} className="text-blue-600 dark:text-blue-400" />
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-            Simpler Fuel
+            {t('app.title')}
           </h1>
         </div>
         
         <h2 className="text-xl font-semibold text-center mb-6 text-gray-700 dark:text-gray-300">
-          {isSignUp ? 'Create Account' : 'Sign In'}
+          {isSignUp ? t('auth.createAccount') : t('auth.signIn')}
         </h2>
 
         {hasLocal && (
@@ -75,7 +77,7 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
+              {t('auth.email')}
             </label>
             <input
               id="email"
@@ -90,7 +92,7 @@ export default function Login() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
+              {t('auth.password')}
             </label>
             <input
               id="password"
@@ -115,7 +117,7 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+            {loading ? t('common.loading') : isSignUp ? t('auth.signUp') : t('auth.signIn')}
           </button>
         </form>
 
@@ -127,7 +129,7 @@ export default function Login() {
             }}
             className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
           >
-            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
+            {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.dontHaveAccount')}
           </button>
         </div>
 
