@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "simpler-fuel",
-  "version": "0.2.0",
+  "productName": "Simpler Fuel",
+  "version": "0.3.0",
   "identifier": "com.simpler-fuel.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "simpler-fuel",
+        "title": "Simpler Fuel",
         "width": 800,
         "height": 600
       }
