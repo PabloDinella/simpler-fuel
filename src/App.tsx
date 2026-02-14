@@ -5,6 +5,7 @@ import { initAuth, subscribeToAuth, AuthState } from './lib/auth';
 import { initDatabase, getDatabase, Settings } from './db';
 import { setupReplication, stopReplication } from './db/replication';
 import { migrateLocalDataToCloud, hasLocalEntries } from './lib/migration';
+import { bootstrapVehicleData } from './lib/vehicles';
 import i18n from './i18n/config';
 
 // Create router instance
@@ -28,60 +29,72 @@ function App() {
   const [replicationActive, setReplicationActive] = useState(false);
 
   useEffect(() => {
-    // Initialize database immediately (no auth required)
-    initDatabase().then(() => {
-      setDbReady(true);
-      setDbError(null);
-      console.log('[App] Local database ready');
-    }).catch(error => {
-      console.error('[App] Database init error:', error);
-      setDbError(error.message || 'Failed to initialize database');
-      setDbReady(false);
-      // Still mark auth as ready so user can see the error
-      setAuthState(prev => ({ ...prev, loading: false }));
-    });
+    let isMounted = true;
 
-    // Initialize auth system
+    const initialize = async () => {
+      try {
+        await initDatabase();
+        await bootstrapVehicleData();
+        if (!isMounted) return;
+        setDbReady(true);
+        setDbError(null);
+        console.log('[App] Local database and vehicles ready');
+      } catch (error: any) {
+        console.error('[App] Database init error:', error);
+        if (!isMounted) return;
+        setDbError(error.message || 'Failed to initialize database');
+        setDbReady(false);
+        setAuthState(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    initialize();
     initAuth();
-    
-    // Subscribe to auth changes
+
     const unsubscribe = subscribeToAuth((state) => {
       setAuthState(state);
-      
-      // Setup replication when user logs in
-      if (state.user && dbReady && !replicationActive) {
-        initDatabase().then(async (db) => {
-          // Check if there's local data to migrate
-          const needsMigration = await hasLocalEntries();
-          
-          if (needsMigration) {
-            console.log('[App] Migrating local data to cloud...');
-            await migrateLocalDataToCloud(state.user!.id);
-          } else {
-            // Just setup replication
-            await setupReplication(db, state.user!.id);
-          }
-          
-          setReplicationActive(true);
-          console.log('[App] Cloud sync enabled');
-        }).catch(error => {
-          console.error('[App] Replication setup error:', error);
-        });
-      }
-      
-      // Stop replication when user logs out
-      if (!state.user && replicationActive) {
-        stopReplication().then(() => {
-          setReplicationActive(false);
-          console.log('[App] Cloud sync disabled');
-        });
-      }
     });
 
     return () => {
+      isMounted = false;
       unsubscribe();
     };
-  }, [dbReady, replicationActive]);
+  }, []);
+
+  useEffect(() => {
+    if (!dbReady) return;
+
+    if (authState.user && !replicationActive) {
+      initDatabase()
+        .then(async (db) => {
+          const needsMigration = await hasLocalEntries();
+
+          if (needsMigration) {
+            console.log('[App] Migrating local data to cloud...');
+            await migrateLocalDataToCloud(authState.user!.id);
+          } else {
+            await setupReplication(db, authState.user!.id);
+          }
+
+          setReplicationActive(true);
+          console.log('[App] Cloud sync enabled');
+        })
+        .catch((error) => {
+          console.error('[App] Replication setup error:', error);
+        });
+    }
+
+    if (!authState.user && replicationActive) {
+      stopReplication()
+        .then(() => {
+          setReplicationActive(false);
+          console.log('[App] Cloud sync disabled');
+        })
+        .catch((error) => {
+          console.error('[App] Stop replication error:', error);
+        });
+    }
+  }, [authState.user, dbReady, replicationActive]);
 
   // Apply theme based on settings - only after database is ready
   useEffect(() => {

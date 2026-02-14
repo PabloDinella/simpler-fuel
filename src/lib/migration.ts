@@ -8,6 +8,22 @@ import { setupReplication } from '../db/replication';
 export async function migrateLocalDataToCloud(userId: string): Promise<void> {
   try {
     const db = await getDatabase();
+
+    const localVehicles = await db.vehicles
+      .find({
+        selector: {
+          user_id: { $exists: false }
+        }
+      })
+      .exec();
+
+    for (const vehicle of localVehicles) {
+      await vehicle.update({
+        $set: {
+          user_id: userId
+        }
+      });
+    }
     
     // Get all local entries that don't have a user_id yet
     const localEntries = await db.fuel_entries
@@ -23,6 +39,13 @@ export async function migrateLocalDataToCloud(userId: string): Promise<void> {
     if (localEntries.length === 0) {
       console.log('[Migration] No local entries to migrate');
       return;
+    }
+
+    for (const entry of localEntries) {
+      const data = entry.toJSON() as any;
+      if (!data.vehicle_id) {
+        throw new Error('Cannot migrate entry without vehicle_id');
+      }
     }
 
     // Update all local entries to include user_id

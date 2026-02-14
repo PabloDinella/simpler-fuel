@@ -18,11 +18,14 @@
 4. Click "Run" to execute the SQL
 
 This will create:
-- `fuel_entries` table with proper columns
+- `vehicles` table with proper columns
+- `fuel_entries` table with vehicle linkage
 - Automatic `_modified` timestamp updates
 - Realtime replication enabled
 - Row Level Security (RLS) policies
 - Performance indexes
+
+If you already had a previous deployment without vehicles, run `supabase-migration-multi-vehicle.sql` first (or immediately after) to backfill each user's default `My Vehicle` and assign existing entries.
 
 ## 3. Get Your Supabase Credentials
 
@@ -47,9 +50,10 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 
 After completing the implementation steps in the app:
 1. Sign up a test user
-2. Add a fuel entry
-3. Check the `fuel_entries` table in Supabase dashboard
-4. Verify realtime sync by opening the app in two browser tabs
+2. Create at least one vehicle in app settings (or use the auto-created default vehicle)
+3. Add a fuel entry
+4. Check both `vehicles` and `fuel_entries` tables in Supabase dashboard
+5. Verify realtime sync by opening the app in two browser tabs
 
 ## Notes
 

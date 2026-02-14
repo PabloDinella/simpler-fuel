@@ -8,6 +8,7 @@ A cross-platform fuel consumption tracking app built with Tauri, React, RxDB, an
 - 🔄 Offline-first with automatic cloud sync
 - 📈 View consumption statistics and trends
 - 🌍 Multiple unit systems (km/L, mpg, L/100km, etc.)
+- 🚗 Multi-vehicle support with active vehicle tracking
 - 🌐 Multi-language support (English, Spanish)
 - 🔐 Secure authentication with Supabase
 - 📱 Cross-platform: Web, Desktop (Windows, macOS, Linux)
@@ -111,7 +112,6 @@ See [PLAN.md](./PLAN.md) for the complete implementation plan and roadmap.
 
 - 📱 iOS and Android support (Tauri mobile)
 - 📊 Advanced charts and visualizations
-- 🚗 Multiple vehicle support
 - 📍 Gas station price tracking
 - 🔔 Maintenance reminders
 

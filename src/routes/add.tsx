@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { getDatabase, Settings, FuelEntry } from '../db';
+import { getDatabase, Settings, FuelEntry, Vehicle } from '../db';
 import { getAuthState } from '../lib/auth';
 import {
   convertDistanceToKm,
@@ -16,6 +16,8 @@ export default function AddEntry() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState('');
   const [lastOdometer, setLastOdometer] = useState<number | null>(null);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [odometer, setOdometer] = useState('');
@@ -23,28 +25,71 @@ export default function AddEntry() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const loadLastOdometer = async (
+    vehicleId: string,
+    settingsData: Settings,
+    shouldPrefill: boolean
+  ) => {
+    const db = await getDatabase();
+    const lastEntry = await db.fuel_entries
+      .findOne({
+        selector: {
+          vehicle_id: vehicleId
+        }
+      })
+      .sort({ date: 'desc' })
+      .exec();
+
+    if (!lastEntry) {
+      setLastOdometer(null);
+      if (shouldPrefill) setOdometer('');
+      return;
+    }
+
+    const entry = lastEntry.toJSON() as FuelEntry;
+    const lastOdometerInUserUnits = convertDistanceFromKm(
+      entry.odometer_km,
+      settingsData.distanceUnit
+    );
+    setLastOdometer(lastOdometerInUserUnits);
+    if (shouldPrefill) {
+      setOdometer(lastOdometerInUserUnits.toString());
+    }
+  };
+
   useEffect(() => {
     getDatabase().then(async (db) => {
       const userSettings = await db.settings.findOne().exec();
-      if (userSettings) {
-        const settingsData = userSettings.toJSON() as Settings;
-        setSettings(settingsData);
-        
-        // Get the last fuel entry to prefill odometer
-        const lastEntry = await db.fuel_entries
-          .findOne()
-          .sort({ date: 'desc' })
-          .exec();
-        
-        if (lastEntry) {
-          const entry = lastEntry.toJSON() as FuelEntry;
-          const lastOdometerInUserUnits = convertDistanceFromKm(entry.odometer_km, settingsData.distanceUnit);
-          setLastOdometer(lastOdometerInUserUnits);
-          setOdometer(lastOdometerInUserUnits.toString());
-        }
+      if (!userSettings) return;
+
+      const settingsData = userSettings.toJSON() as Settings;
+      setSettings(settingsData);
+
+      const vehicleDocs = await db.vehicles
+        .find({
+          selector: {
+            is_archived: false
+          }
+        })
+        .sort({ created_at: 'asc' })
+        .exec();
+      const vehicleData = vehicleDocs.map((doc) => doc.toJSON() as Vehicle);
+      setVehicles(vehicleData);
+
+      const initialVehicleId =
+        settingsData.activeVehicleId || vehicleData[0]?.id || '';
+      setSelectedVehicleId(initialVehicleId);
+
+      if (initialVehicleId) {
+        await loadLastOdometer(initialVehicleId, settingsData, true);
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (!settings || !selectedVehicleId) return;
+    loadLastOdometer(selectedVehicleId, settings, true);
+  }, [settings, selectedVehicleId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,13 +102,23 @@ export default function AddEntry() {
       if (!settings) {
         throw new Error('Settings not loaded');
       }
+      if (!selectedVehicleId) {
+        throw new Error('Vehicle not selected');
+      }
 
       // Convert to base units (km, liters)
-      const odometerKm = convertDistanceToKm(parseFloat(odometer), settings.distanceUnit);
-      const liters = convertVolumeToLiters(parseFloat(fuel), settings.volumeUnit);
+      const odometerKm = convertDistanceToKm(
+        parseFloat(odometer),
+        settings.distanceUnit
+      );
+      const liters = convertVolumeToLiters(
+        parseFloat(fuel),
+        settings.volumeUnit
+      );
 
       await db.fuel_entries.insert({
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        vehicle_id: selectedVehicleId,
         date: new Date(date).toISOString(),
         odometer_km: odometerKm,
         liters: liters,
@@ -71,11 +126,10 @@ export default function AddEntry() {
         user_id: authState.user?.id // Optional - only set if logged in
       });
 
-      // Navigate back to dashboard
       navigate({ to: '/' });
     } catch (error) {
       console.error('Error adding entry:', error);
-      alert('Failed to add entry. Please try again.');
+      alert(t('entry.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -84,7 +138,9 @@ export default function AddEntry() {
   if (!settings) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-lg text-gray-900 dark:text-white">{t('common.loading')}</div>
+        <div className="text-lg text-gray-900 dark:text-white">
+          {t('common.loading')}
+        </div>
       </div>
     );
   }
@@ -93,15 +149,48 @@ export default function AddEntry() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center mb-6 pt-6">
-          <Link to="/" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mr-4">
+          <Link
+            to="/"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mr-4"
+          >
             ← {t('nav.back')}
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('entry.add')}</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {t('entry.add')}
+          </h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow space-y-4"
+        >
           <div>
-            <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="vehicle"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              {t('vehicles.selectVehicle')}
+            </label>
+            <select
+              id="vehicle"
+              value={selectedVehicleId}
+              onChange={(e) => setSelectedVehicleId(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              {vehicles.map((vehicle) => (
+                <option key={vehicle.id} value={vehicle.id}>
+                  {vehicle.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="date"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('entry.date')}
             </label>
             <input
@@ -115,7 +204,10 @@ export default function AddEntry() {
           </div>
 
           <div>
-            <label htmlFor="odometer" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="odometer"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('entry.odometer')} ({getDistanceUnitLabel(settings.distanceUnit)})
             </label>
             <input
@@ -126,18 +218,22 @@ export default function AddEntry() {
               onChange={(e) => setOdometer(e.target.value)}
               required
               min="0"
-              placeholder={`e.g., 10000`}
+              placeholder="e.g., 10000"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             {lastOdometer !== null && (
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Last recorded: {formatNumber(lastOdometer)} {getDistanceUnitLabel(settings.distanceUnit)}
+                {t('entry.lastRecorded')}: {formatNumber(lastOdometer)}{' '}
+                {getDistanceUnitLabel(settings.distanceUnit)}
               </p>
             )}
           </div>
 
           <div>
-            <label htmlFor="fuel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="fuel"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('entry.fuel')} ({getVolumeUnitLabel(settings.volumeUnit)})
             </label>
             <input
@@ -148,13 +244,16 @@ export default function AddEntry() {
               onChange={(e) => setFuel(e.target.value)}
               required
               min="0"
-              placeholder={`e.g., 40`}
+              placeholder="e.g., 40"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="notes"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               {t('entry.notesOptional')}
             </label>
             <textarea

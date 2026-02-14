@@ -16,33 +16,56 @@ export default function History() {
   const { t } = useTranslation();
   const [entries, setEntries] = useState<FuelEntry[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [activeVehicleId, setActiveVehicleId] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let subscription: any;
+    let settingsSubscription: any;
 
     getDatabase().then(async (db) => {
-      // Load settings
-      const userSettings = await db.settings.findOne().exec();
-      if (userSettings) {
-        setSettings(userSettings.toJSON() as Settings);
-      }
+      settingsSubscription = db.settings.findOne().$.subscribe((doc: any) => {
+        if (doc) {
+          const settingsData = doc.toJSON() as Settings;
+          setSettings(settingsData);
+          setActiveVehicleId(settingsData.activeVehicleId);
+        }
+      });
+    });
 
-      // Subscribe to fuel entries
-      subscription = db.fuel_entries
-        .find()
+    return () => {
+      if (settingsSubscription) settingsSubscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    let entriesSubscription: any;
+
+    if (!activeVehicleId) {
+      setEntries([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    getDatabase().then(async (db) => {
+      entriesSubscription = db.fuel_entries
+        .find({
+          selector: {
+            vehicle_id: activeVehicleId
+          }
+        })
         .sort({ date: 'desc' })
         .$
         .subscribe((docs: any[]) => {
-          setEntries(docs.map(doc => doc.toJSON() as FuelEntry));
+          setEntries(docs.map((doc) => doc.toJSON() as FuelEntry));
           setLoading(false);
         });
     });
 
     return () => {
-      if (subscription) subscription.unsubscribe();
+      if (entriesSubscription) entriesSubscription.unsubscribe();
     };
-  }, []);
+  }, [activeVehicleId]);
 
   const handleDelete = async (id: string) => {
     if (!confirm(t('entry.confirmDelete'))) return;
@@ -55,7 +78,7 @@ export default function History() {
       }
     } catch (error) {
       console.error('Error deleting entry:', error);
-      alert('Failed to delete entry');
+      alert(t('entry.deleteFailed'));
     }
   };
 
@@ -67,9 +90,8 @@ export default function History() {
     );
   }
 
-  // Calculate consumption for each entry
   const consumptionData = calculateConsumption(entries, settings.consumptionFormat);
-  const consumptionMap = new Map(consumptionData.map(c => [c.date, c.value]));
+  const consumptionMap = new Map(consumptionData.map((c) => [c.date, c.value]));
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -102,8 +124,14 @@ export default function History() {
         ) : (
           <div className="space-y-4">
             {entries.map((entry) => {
-              const odometerDisplay = convertDistanceFromKm(entry.odometer_km, settings.distanceUnit);
-              const fuelDisplay = convertVolumeFromLiters(entry.liters, settings.volumeUnit);
+              const odometerDisplay = convertDistanceFromKm(
+                entry.odometer_km,
+                settings.distanceUnit
+              );
+              const fuelDisplay = convertVolumeFromLiters(
+                entry.liters,
+                settings.volumeUnit
+              );
               const consumption = consumptionMap.get(entry.date);
 
               return (
@@ -116,30 +144,34 @@ export default function History() {
                         </span>
                         {consumption && (
                           <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {formatNumber(consumption)} {getConsumptionFormatLabel(settings.consumptionFormat)}
+                            {formatNumber(consumption)}{' '}
+                            {getConsumptionFormatLabel(settings.consumptionFormat)}
                           </span>
                         )}
                       </div>
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                         <div>
                           <span className="font-medium">{t('entry.odometer')}:</span>{' '}
-                          {formatNumber(odometerDisplay)} {getDistanceUnitLabel(settings.distanceUnit)}
+                          {formatNumber(odometerDisplay)}{' '}
+                          {getDistanceUnitLabel(settings.distanceUnit)}
                         </div>
                         <div>
                           <span className="font-medium">{t('entry.fuel')}:</span>{' '}
-                          {formatNumber(fuelDisplay, 3)} {getVolumeUnitLabel(settings.volumeUnit)}
+                          {formatNumber(fuelDisplay, 3)}{' '}
+                          {getVolumeUnitLabel(settings.volumeUnit)}
                         </div>
                       </div>
                       {entry.notes && (
                         <div className="mt-2 text-sm text-gray-600">
-                          <span className="font-medium">{t('entry.notes')}:</span> {entry.notes}
+                          <span className="font-medium">{t('entry.notes')}:</span>{' '}
+                          {entry.notes}
                         </div>
                       )}
                     </div>
                     <button
                       onClick={() => handleDelete(entry.id)}
                       className="text-red-600 hover:text-red-800 ml-4"
-                      title="Delete entry"
+                      title={t('entry.delete')}
                     >
                       🗑️
                     </button>

@@ -1,30 +1,51 @@
-import { useState, useEffect } from "react";
-import { Link } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { getDatabase, Settings } from "../db";
-import { signOut, getAuthState } from "../lib/auth";
-import type { DistanceUnit, VolumeUnit, ConsumptionFormat } from "../lib/units";
-import { RxDBUpdatePlugin } from "rxdb/plugins/update";
-import { addRxPlugin } from "rxdb";
-addRxPlugin(RxDBUpdatePlugin);
+import { useState, useEffect } from 'react';
+import { Link } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import { getDatabase, Settings, Vehicle } from '../db';
+import { signOut, getAuthState } from '../lib/auth';
+import type { DistanceUnit, VolumeUnit, ConsumptionFormat } from '../lib/units';
+
+function createId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const authState = getAuthState();
   const isLoggedIn = !!authState.user;
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [newVehicleName, setNewVehicleName] = useState('');
+  const [newVehicleNotes, setNewVehicleNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAccountBenefits, setShowAccountBenefits] = useState(false);
 
   useEffect(() => {
+    let settingsSubscription: any;
+    let vehiclesSubscription: any;
+
     getDatabase().then(async (db) => {
-      const userSettings = await db.settings.findOne().exec();
-      if (userSettings) {
-        setSettings(userSettings.toJSON() as Settings);
-      }
-      setLoading(false);
+      settingsSubscription = db.settings.findOne().$.subscribe((doc: any) => {
+        if (doc) {
+          setSettings(doc.toJSON() as Settings);
+          setLoading(false);
+        }
+      });
+
+      vehiclesSubscription = db.vehicles
+        .find()
+        .sort({ created_at: 'asc' })
+        .$
+        .subscribe((docs: any[]) => {
+          setVehicles(docs.map((doc) => doc.toJSON() as Vehicle));
+        });
     });
+
+    return () => {
+      if (settingsSubscription) settingsSubscription.unsubscribe();
+      if (vehiclesSubscription) vehiclesSubscription.unsubscribe();
+    };
   }, []);
 
   const handleSave = async () => {
@@ -41,16 +62,137 @@ export default function SettingsPage() {
             volumeUnit: settings.volumeUnit,
             consumptionFormat: settings.consumptionFormat,
             language: settings.language,
-            theme: settings.theme,
-          },
+            theme: settings.theme
+          }
         });
       }
-      alert(t('settings.saveSettings') + ' ' + t('common.success').toLowerCase() + '!');
+      alert(
+        t('settings.saveSettings') + ' ' + t('common.success').toLowerCase() + '!'
+      );
     } catch (error) {
-      console.error("Error saving settings:", error);
-      alert("Failed to save settings");
+      console.error('Error saving settings:', error);
+      alert(t('settings.saveFailed'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCreateVehicle = async () => {
+    if (!settings) return;
+
+    const name = newVehicleName.trim();
+    if (!name) {
+      alert(t('vehicles.nameRequired'));
+      return;
+    }
+
+    try {
+      const db = await getDatabase();
+      const id = createId();
+
+      await db.vehicles.insert({
+        id,
+        name,
+        notes: newVehicleNotes.trim() || undefined,
+        is_archived: false,
+        created_at: new Date().toISOString(),
+        user_id: authState.user?.id
+      });
+
+      if (!settings.activeVehicleId) {
+        const settingsDoc = await db.settings.findOne(settings.id).exec();
+        if (settingsDoc) {
+          await settingsDoc.update({
+            $set: {
+              activeVehicleId: id
+            }
+          });
+        }
+      }
+
+      setNewVehicleName('');
+      setNewVehicleNotes('');
+    } catch (error) {
+      console.error('Error creating vehicle:', error);
+      alert(t('vehicles.createFailed'));
+    }
+  };
+
+  const handleSetActiveVehicle = async (vehicleId: string) => {
+    if (!settings) return;
+
+    try {
+      const db = await getDatabase();
+      const settingsDoc = await db.settings.findOne(settings.id).exec();
+      if (!settingsDoc) return;
+
+      await settingsDoc.update({
+        $set: {
+          activeVehicleId: vehicleId
+        }
+      });
+    } catch (error) {
+      console.error('Error setting active vehicle:', error);
+      alert(t('vehicles.switchFailed'));
+    }
+  };
+
+  const handleArchiveVehicle = async (vehicle: Vehicle) => {
+    if (!settings) return;
+
+    const nonArchivedVehicles = vehicles.filter((v) => !v.is_archived);
+    if (nonArchivedVehicles.length <= 1) {
+      alert(t('vehicles.cannotArchiveLast'));
+      return;
+    }
+
+    try {
+      const db = await getDatabase();
+      const vehicleDoc = await db.vehicles.findOne(vehicle.id).exec();
+      if (!vehicleDoc) return;
+
+      if (settings.activeVehicleId === vehicle.id) {
+        const replacement = nonArchivedVehicles.find((v) => v.id !== vehicle.id);
+        if (!replacement) {
+          alert(t('vehicles.cannotArchiveLast'));
+          return;
+        }
+
+        const settingsDoc = await db.settings.findOne(settings.id).exec();
+        if (settingsDoc) {
+          await settingsDoc.update({
+            $set: {
+              activeVehicleId: replacement.id
+            }
+          });
+        }
+      }
+
+      await vehicleDoc.update({
+        $set: {
+          is_archived: true
+        }
+      });
+    } catch (error) {
+      console.error('Error archiving vehicle:', error);
+      alert(t('vehicles.archiveFailed'));
+    }
+  };
+
+  const handleUnarchiveVehicle = async (vehicle: Vehicle) => {
+    try {
+      const db = await getDatabase();
+      const vehicleDoc = await db.vehicles.findOne(vehicle.id).exec();
+      if (!vehicleDoc) return;
+
+      await vehicleDoc.update({
+        $set: {
+          is_archived: false
+        }
+      });
+    } catch (error) {
+      console.error('Error unarchiving vehicle:', error);
+      alert(t('vehicles.unarchiveFailed'));
     }
   };
 
@@ -59,7 +201,7 @@ export default function SettingsPage() {
       try {
         await signOut();
       } catch (error) {
-        console.error("Sign out error:", error);
+        console.error('Sign out error:', error);
       }
     }
   };
@@ -67,10 +209,15 @@ export default function SettingsPage() {
   if (loading || !settings) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-lg text-gray-900 dark:text-white">{t('common.loading')}</div>
+        <div className="text-lg text-gray-900 dark:text-white">
+          {t('common.loading')}
+        </div>
       </div>
     );
   }
+
+  const activeVehicles = vehicles.filter((vehicle) => !vehicle.is_archived);
+  const archivedVehicles = vehicles.filter((vehicle) => vehicle.is_archived);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
@@ -93,29 +240,27 @@ export default function SettingsPage() {
               {t('settings.appearance')}
             </h2>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('settings.theme')}
-                </label>
-                <select
-                  value={settings.theme}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      theme: e.target.value as "light" | "dark" | "system",
-                    })
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="light">{t('settings.themeLight')}</option>
-                  <option value="dark">{t('settings.themeDark')}</option>
-                  <option value="system">{t('settings.themeSystem')}</option>
-                </select>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {t('settings.themeDescription')}
-                </p>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('settings.theme')}
+              </label>
+              <select
+                value={settings.theme}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    theme: e.target.value as 'light' | 'dark' | 'system'
+                  })
+                }
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="light">{t('settings.themeLight')}</option>
+                <option value="dark">{t('settings.themeDark')}</option>
+                <option value="system">{t('settings.themeSystem')}</option>
+              </select>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {t('settings.themeDescription')}
+              </p>
             </div>
           </div>
 
@@ -134,7 +279,7 @@ export default function SettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      distanceUnit: e.target.value as DistanceUnit,
+                      distanceUnit: e.target.value as DistanceUnit
                     })
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -153,7 +298,7 @@ export default function SettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      volumeUnit: e.target.value as VolumeUnit,
+                      volumeUnit: e.target.value as VolumeUnit
                     })
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -173,15 +318,13 @@ export default function SettingsPage() {
                   onChange={(e) =>
                     setSettings({
                       ...settings,
-                      consumptionFormat: e.target.value as ConsumptionFormat,
+                      consumptionFormat: e.target.value as ConsumptionFormat
                     })
                   }
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="km_per_L">{t('units.kmPerL')}</option>
-                  <option value="L_per_100km">
-                    {t('units.lPer100km')}
-                  </option>
+                  <option value="L_per_100km">{t('units.lPer100km')}</option>
                   <option value="mpg_us">{t('units.mpgUS')}</option>
                   <option value="mpg_uk">{t('units.mpgUK')}</option>
                 </select>
@@ -204,6 +347,121 @@ export default function SettingsPage() {
                 </select>
               </div>
             </div>
+          </div>
+
+          <div className="pt-6 border-t border-gray-200 dark:border-gray-700 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {t('vehicles.title')}
+            </h2>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('vehicles.name')}
+                </label>
+                <input
+                  value={newVehicleName}
+                  onChange={(e) => setNewVehicleName(e.target.value)}
+                  placeholder={t('vehicles.namePlaceholder')}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('vehicles.notes')}
+                </label>
+                <input
+                  value={newVehicleNotes}
+                  onChange={(e) => setNewVehicleNotes(e.target.value)}
+                  placeholder={t('vehicles.notesPlaceholder')}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                onClick={handleCreateVehicle}
+                className="bg-blue-600 dark:bg-blue-700 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 font-medium"
+              >
+                {t('vehicles.create')}
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('vehicles.activeList')}
+              </h3>
+              {activeVehicles.map((vehicle) => (
+                <div
+                  key={vehicle.id}
+                  className="border border-gray-200 dark:border-gray-700 rounded-md p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {vehicle.name}
+                      </p>
+                      {vehicle.notes && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          {vehicle.notes}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {settings.activeVehicleId === vehicle.id ? (
+                        <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full">
+                          {t('vehicles.active')}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleSetActiveVehicle(vehicle.id)}
+                          className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded"
+                        >
+                          {t('vehicles.setActive')}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleArchiveVehicle(vehicle)}
+                        className="text-xs bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded"
+                      >
+                        {t('vehicles.archive')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {archivedVehicles.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('vehicles.archivedList')}
+                </h3>
+                {archivedVehicles.map((vehicle) => (
+                  <div
+                    key={vehicle.id}
+                    className="border border-gray-200 dark:border-gray-700 rounded-md p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {vehicle.name}
+                        </p>
+                        {vehicle.notes && (
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {vehicle.notes}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleUnarchiveVehicle(vehicle)}
+                        className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded"
+                      >
+                        {t('vehicles.unarchive')}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <button
@@ -264,33 +522,25 @@ export default function SettingsPage() {
                         <span className="text-green-500 dark:text-green-400 mr-2">
                           ✓
                         </span>
-                        <span>
-                          {t('settings.benefit1')}
-                        </span>
+                        <span>{t('settings.benefit1')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-green-500 dark:text-green-400 mr-2">
                           ✓
                         </span>
-                        <span>
-                          {t('settings.benefit2')}
-                        </span>
+                        <span>{t('settings.benefit2')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-green-500 dark:text-green-400 mr-2">
                           ✓
                         </span>
-                        <span>
-                          {t('settings.benefit3')}
-                        </span>
+                        <span>{t('settings.benefit3')}</span>
                       </li>
                       <li className="flex items-start">
                         <span className="text-green-500 dark:text-green-400 mr-2">
                           ✓
                         </span>
-                        <span>
-                          {t('settings.benefit4')}
-                        </span>
+                        <span>{t('settings.benefit4')}</span>
                       </li>
                     </ul>
                     <div className="pt-2 space-y-2">

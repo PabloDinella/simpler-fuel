@@ -32,7 +32,8 @@ const resources = {
         addEntryDesc: 'Record a new fuel entry',
         historyDesc: 'View all fuel entries',
         statsDesc: 'View consumption trends',
-        settingsDesc: 'Configure preferences'
+        settingsDesc: 'Configure preferences',
+        activeVehicle: 'Active Vehicle'
       },
       entry: {
         add: 'Add Fuel Entry',
@@ -45,11 +46,15 @@ const resources = {
         save: 'Save Entry',
         saving: 'Saving...',
         delete: 'Delete',
-        confirmDelete: 'Are you sure you want to delete this entry?'
+        confirmDelete: 'Are you sure you want to delete this entry?',
+        lastRecorded: 'Last recorded',
+        saveFailed: 'Failed to save entry. Please try again.',
+        deleteFailed: 'Failed to delete entry'
       },
       history: {
         title: 'Fuel History',
         noEntries: 'No fuel entries yet',
+        noEntriesForVehicle: 'No fuel entries yet for {{vehicle}}',
         addFirst: 'Add Your First Entry'
       },
       stats: {
@@ -75,6 +80,7 @@ const resources = {
         themeSystem: 'System',
         themeDescription: 'Choose your preferred color scheme',
         saveSettings: 'Save Settings',
+        saveFailed: 'Failed to save settings',
         account: 'Account',
         confirmSignOut: 'Are you sure you want to sign out?',
         localOnlyMode: 'Currently using Local Only mode',
@@ -92,6 +98,28 @@ const resources = {
         dataPrivacy: 'Data & Privacy',
         deleteAccountBtn: 'Delete Account & Data',
         deleteAccountDesc: 'Permanently delete your account and all associated data'
+      },
+      vehicles: {
+        title: 'Vehicles',
+        selectVehicle: 'Vehicle',
+        name: 'Vehicle Name',
+        namePlaceholder: 'e.g., Family Car',
+        notes: 'Vehicle Notes',
+        notesPlaceholder: 'e.g., Diesel, city commute',
+        create: 'Create Vehicle',
+        createFailed: 'Failed to create vehicle',
+        setActive: 'Set Active',
+        active: 'Active',
+        activeList: 'Active Vehicles',
+        archivedList: 'Archived Vehicles',
+        archive: 'Archive',
+        archiveFailed: 'Failed to archive vehicle',
+        unarchive: 'Unarchive',
+        unarchiveFailed: 'Failed to unarchive vehicle',
+        switchFailed: 'Failed to switch active vehicle',
+        cannotArchiveLast: 'Cannot archive the last active vehicle',
+        nameRequired: 'Vehicle name is required',
+        noneAvailable: 'No vehicles available'
       },
       units: {
         km: 'Kilometers (km)',
@@ -141,7 +169,8 @@ const resources = {
         addEntryDesc: 'Registrar nueva carga',
         historyDesc: 'Ver todas las cargas',
         statsDesc: 'Ver tendencias de consumo',
-        settingsDesc: 'Configurar preferencias'
+        settingsDesc: 'Configurar preferencias',
+        activeVehicle: 'Vehículo Activo'
       },
       entry: {
         add: 'Agregar Carga',
@@ -154,11 +183,15 @@ const resources = {
         save: 'Guardar',
         saving: 'Guardando...',
         delete: 'Eliminar',
-        confirmDelete: '¿Estás seguro de eliminar esta entrada?'
+        confirmDelete: '¿Estás seguro de eliminar esta entrada?',
+        lastRecorded: 'Último registro',
+        saveFailed: 'No se pudo guardar la entrada. Inténtalo de nuevo.',
+        deleteFailed: 'No se pudo eliminar la entrada'
       },
       history: {
         title: 'Historial',
         noEntries: 'No hay registros aún',
+        noEntriesForVehicle: 'No hay cargas para {{vehicle}}',
         addFirst: 'Agrega tu Primera Carga'
       },
       stats: {
@@ -184,6 +217,7 @@ const resources = {
         themeSystem: 'Sistema',
         themeDescription: 'Elige tu esquema de color preferido',
         saveSettings: 'Guardar Ajustes',
+        saveFailed: 'No se pudieron guardar los ajustes',
         account: 'Cuenta',
         confirmSignOut: '¿Estás seguro de cerrar sesión?',
         localOnlyMode: 'Usando modo Local Solamente',
@@ -201,6 +235,28 @@ const resources = {
         dataPrivacy: 'Datos y Privacidad',
         deleteAccountBtn: 'Eliminar Cuenta y Datos',
         deleteAccountDesc: 'Eliminar permanentemente tu cuenta y todos los datos asociados'
+      },
+      vehicles: {
+        title: 'Vehículos',
+        selectVehicle: 'Vehículo',
+        name: 'Nombre del Vehículo',
+        namePlaceholder: 'ej., Auto Familiar',
+        notes: 'Notas del Vehículo',
+        notesPlaceholder: 'ej., Diésel, uso urbano',
+        create: 'Crear Vehículo',
+        createFailed: 'No se pudo crear el vehículo',
+        setActive: 'Activar',
+        active: 'Activo',
+        activeList: 'Vehículos Activos',
+        archivedList: 'Vehículos Archivados',
+        archive: 'Archivar',
+        archiveFailed: 'No se pudo archivar el vehículo',
+        unarchive: 'Desarchivar',
+        unarchiveFailed: 'No se pudo desarchivar el vehículo',
+        switchFailed: 'No se pudo cambiar el vehículo activo',
+        cannotArchiveLast: 'No se puede archivar el último vehículo activo',
+        nameRequired: 'El nombre del vehículo es obligatorio',
+        noneAvailable: 'No hay vehículos disponibles'
       },
       units: {
         km: 'Kilómetros (km)',
@@ -250,7 +306,8 @@ const resources = {
         addEntryDesc: 'Registrar novo abastecimento',
         historyDesc: 'Ver todos os abastecimentos',
         statsDesc: 'Ver tendências de consumo',
-        settingsDesc: 'Configurar preferências'
+        settingsDesc: 'Configurar preferências',
+        activeVehicle: 'Veículo Ativo'
       },
       entry: {
         add: 'Adicionar Abastecimento',
@@ -263,11 +320,15 @@ const resources = {
         save: 'Salvar',
         saving: 'Salvando...',
         delete: 'Excluir',
-        confirmDelete: 'Tem certeza que deseja excluir esta entrada?'
+        confirmDelete: 'Tem certeza que deseja excluir esta entrada?',
+        lastRecorded: 'Último registro',
+        saveFailed: 'Falha ao salvar o registro. Tente novamente.',
+        deleteFailed: 'Falha ao excluir o registro'
       },
       history: {
         title: 'Histórico',
         noEntries: 'Nenhum registro ainda',
+        noEntriesForVehicle: 'Ainda não há registros para {{vehicle}}',
         addFirst: 'Adicione seu Primeiro Abastecimento'
       },
       stats: {
@@ -293,6 +354,7 @@ const resources = {
         themeSystem: 'Sistema',
         themeDescription: 'Escolha seu esquema de cores preferido',
         saveSettings: 'Salvar Configurações',
+        saveFailed: 'Falha ao salvar configurações',
         account: 'Conta',
         confirmSignOut: 'Tem certeza que deseja sair?',
         localOnlyMode: 'Usando modo Local Apenas',
@@ -310,6 +372,28 @@ const resources = {
         dataPrivacy: 'Dados e Privacidade',
         deleteAccountBtn: 'Excluir Conta e Dados',
         deleteAccountDesc: 'Excluir permanentemente sua conta e todos os dados associados'
+      },
+      vehicles: {
+        title: 'Veículos',
+        selectVehicle: 'Veículo',
+        name: 'Nome do Veículo',
+        namePlaceholder: 'ex., Carro da Família',
+        notes: 'Notas do Veículo',
+        notesPlaceholder: 'ex., Diesel, uso urbano',
+        create: 'Criar Veículo',
+        createFailed: 'Falha ao criar veículo',
+        setActive: 'Definir Ativo',
+        active: 'Ativo',
+        activeList: 'Veículos Ativos',
+        archivedList: 'Veículos Arquivados',
+        archive: 'Arquivar',
+        archiveFailed: 'Falha ao arquivar veículo',
+        unarchive: 'Desarquivar',
+        unarchiveFailed: 'Falha ao desarquivar veículo',
+        switchFailed: 'Falha ao trocar o veículo ativo',
+        cannotArchiveLast: 'Não é possível arquivar o último veículo ativo',
+        nameRequired: 'Nome do veículo é obrigatório',
+        noneAvailable: 'Nenhum veículo disponível'
       },
       units: {
         km: 'Quilômetros (km)',
