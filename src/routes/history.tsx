@@ -54,10 +54,16 @@ export default function History() {
             vehicle_id: activeVehicleId
           }
         })
-        .sort({ date: 'desc' })
+        .sort({ odometer_km: 'desc' })
         .$
         .subscribe((docs: any[]) => {
-          setEntries(docs.map((doc) => doc.toJSON() as FuelEntry));
+          const sortedEntries = docs
+            .map((doc) => doc.toJSON() as FuelEntry)
+            .sort(
+              (a, b) =>
+                b.odometer_km - a.odometer_km
+            );
+          setEntries(sortedEntries);
           setLoading(false);
         });
     });

@@ -27,6 +27,7 @@ function App() {
   const [dbReady, setDbReady] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const [replicationActive, setReplicationActive] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -65,6 +66,7 @@ function App() {
     if (!dbReady) return;
 
     if (authState.user && !replicationActive) {
+      setSyncError(null);
       initDatabase()
         .then(async (db) => {
           const needsMigration = await hasLocalEntries();
@@ -79,12 +81,17 @@ function App() {
           setReplicationActive(true);
           console.log('[App] Cloud sync enabled');
         })
-        .catch((error) => {
+        .catch((error: any) => {
           console.error('[App] Replication setup error:', error);
+          setReplicationActive(false);
+          setSyncError(error?.message || 'Cloud sync could not be started');
         });
     }
 
-    if (!authState.user && replicationActive) {
+    if (!authState.user) {
+      setSyncError(null);
+      if (!replicationActive) return;
+
       stopReplication()
         .then(() => {
           setReplicationActive(false);
@@ -199,7 +206,16 @@ function App() {
     );
   }
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      {syncError && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-amber-100 border-b border-amber-300 px-4 py-2 text-amber-900 text-sm">
+          {syncError}
+        </div>
+      )}
+      <RouterProvider router={router} />
+    </>
+  );
 }
 
 export default App;

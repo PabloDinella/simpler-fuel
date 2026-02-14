@@ -1,0 +1,4 @@
+- Added support for multiple vehicles
+- Fixed cloud sync
+- Added information about sync status
+- Fixed ordering and validation of fuel entries

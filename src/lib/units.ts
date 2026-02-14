@@ -61,9 +61,9 @@ export function calculateConsumption(
 ): Array<{ value: number; date: string }> {
   if (entries.length < 2) return [];
 
-  // Sort by date ascending
+  // Sort by odometer ascending to follow trip progression
   const sorted = [...entries].sort((a, b) => 
-    new Date(a.date).getTime() - new Date(b.date).getTime()
+    a.odometer_km - b.odometer_km
   );
 
   const results: Array<{ value: number; date: string }> = [];
@@ -85,6 +85,39 @@ export function calculateConsumption(
   }
 
   return results;
+}
+
+export function calculateTotals(entries: FuelEntry[]): {
+  totalDistanceKm: number;
+  totalFuelLiters: number;
+} {
+  if (entries.length < 2) {
+    return {
+      totalDistanceKm: 0,
+      totalFuelLiters: 0
+    };
+  }
+
+  const sorted = [...entries].sort((a, b) => a.odometer_km - b.odometer_km);
+
+  let totalDistanceKm = 0;
+  let totalFuelLiters = 0;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const current = sorted[i];
+    const previous = sorted[i - 1];
+    const distanceKm = current.odometer_km - previous.odometer_km;
+
+    if (distanceKm > 0) {
+      totalDistanceKm += distanceKm;
+      totalFuelLiters += current.liters;
+    }
+  }
+
+  return {
+    totalDistanceKm,
+    totalFuelLiters
+  };
 }
 
 // Format consumption value based on selected format

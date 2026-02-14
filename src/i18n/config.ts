@@ -48,6 +48,8 @@ const resources = {
         delete: 'Delete',
         confirmDelete: 'Are you sure you want to delete this entry?',
         lastRecorded: 'Last recorded',
+        odometerLowerThanLast:
+          'Odometer must be greater than or equal to the last recorded value ({{value}} {{unit}}).',
         saveFailed: 'Failed to save entry. Please try again.',
         deleteFailed: 'Failed to delete entry'
       },
@@ -185,6 +187,8 @@ const resources = {
         delete: 'Eliminar',
         confirmDelete: '¿Estás seguro de eliminar esta entrada?',
         lastRecorded: 'Último registro',
+        odometerLowerThanLast:
+          'El odómetro debe ser mayor o igual al último valor registrado ({{value}} {{unit}}).',
         saveFailed: 'No se pudo guardar la entrada. Inténtalo de nuevo.',
         deleteFailed: 'No se pudo eliminar la entrada'
       },
@@ -322,6 +326,8 @@ const resources = {
         delete: 'Excluir',
         confirmDelete: 'Tem certeza que deseja excluir esta entrada?',
         lastRecorded: 'Último registro',
+        odometerLowerThanLast:
+          'O odômetro deve ser maior ou igual ao último valor registrado ({{value}} {{unit}}).',
         saveFailed: 'Falha ao salvar o registro. Tente novamente.',
         deleteFailed: 'Falha ao excluir o registro'
       },

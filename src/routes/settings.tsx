@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { getDatabase, Settings, Vehicle } from '../db';
-import { signOut, getAuthState } from '../lib/auth';
+import {
+  signOut,
+  getAuthState,
+  subscribeToAuth,
+  type AuthState
+} from '../lib/auth';
 import type { DistanceUnit, VolumeUnit, ConsumptionFormat } from '../lib/units';
 
 function createId(): string {
@@ -11,7 +16,7 @@ function createId(): string {
 
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const authState = getAuthState();
+  const [authState, setAuthState] = useState<AuthState>(() => getAuthState());
   const isLoggedIn = !!authState.user;
   const [settings, setSettings] = useState<Settings | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -20,6 +25,12 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAccountBenefits, setShowAccountBenefits] = useState(false);
+
+  useEffect(() => {
+    return subscribeToAuth((state) => {
+      setAuthState(state);
+    });
+  }, []);
 
   useEffect(() => {
     let settingsSubscription: any;

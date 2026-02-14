@@ -25,11 +25,7 @@ export default function AddEntry() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const loadLastOdometer = async (
-    vehicleId: string,
-    settingsData: Settings,
-    shouldPrefill: boolean
-  ) => {
+  const loadLastOdometer = async (vehicleId: string, settingsData: Settings) => {
     const db = await getDatabase();
     const lastEntry = await db.fuel_entries
       .findOne({
@@ -37,12 +33,11 @@ export default function AddEntry() {
           vehicle_id: vehicleId
         }
       })
-      .sort({ date: 'desc' })
+      .sort({ odometer_km: 'desc' })
       .exec();
 
     if (!lastEntry) {
       setLastOdometer(null);
-      if (shouldPrefill) setOdometer('');
       return;
     }
 
@@ -52,9 +47,6 @@ export default function AddEntry() {
       settingsData.distanceUnit
     );
     setLastOdometer(lastOdometerInUserUnits);
-    if (shouldPrefill) {
-      setOdometer(lastOdometerInUserUnits.toString());
-    }
   };
 
   useEffect(() => {
@@ -79,16 +71,13 @@ export default function AddEntry() {
       const initialVehicleId =
         settingsData.activeVehicleId || vehicleData[0]?.id || '';
       setSelectedVehicleId(initialVehicleId);
-
-      if (initialVehicleId) {
-        await loadLastOdometer(initialVehicleId, settingsData, true);
-      }
     });
   }, []);
 
   useEffect(() => {
     if (!settings || !selectedVehicleId) return;
-    loadLastOdometer(selectedVehicleId, settings, true);
+    setOdometer('');
+    loadLastOdometer(selectedVehicleId, settings);
   }, [settings, selectedVehicleId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,16 +94,47 @@ export default function AddEntry() {
       if (!selectedVehicleId) {
         throw new Error('Vehicle not selected');
       }
+      const odometerValue = parseFloat(odometer);
+      if (!Number.isFinite(odometerValue)) {
+        throw new Error('Invalid odometer value');
+      }
 
       // Convert to base units (km, liters)
       const odometerKm = convertDistanceToKm(
-        parseFloat(odometer),
+        odometerValue,
         settings.distanceUnit
       );
       const liters = convertVolumeToLiters(
         parseFloat(fuel),
         settings.volumeUnit
       );
+
+      const latestEntry = await db.fuel_entries
+        .findOne({
+          selector: {
+            vehicle_id: selectedVehicleId
+          }
+        })
+        .sort({ odometer_km: 'desc' })
+        .exec();
+
+      if (latestEntry) {
+        const latestOdometerKm = (latestEntry.toJSON() as FuelEntry).odometer_km;
+        if (odometerKm < latestOdometerKm) {
+          const latestInUserUnits = convertDistanceFromKm(
+            latestOdometerKm,
+            settings.distanceUnit
+          );
+          alert(
+            t('entry.odometerLowerThanLast', {
+              value: formatNumber(latestInUserUnits),
+              unit: getDistanceUnitLabel(settings.distanceUnit)
+            })
+          );
+          setLoading(false);
+          return;
+        }
+      }
 
       await db.fuel_entries.insert({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
@@ -217,7 +237,7 @@ export default function AddEntry() {
               value={odometer}
               onChange={(e) => setOdometer(e.target.value)}
               required
-              min="0"
+              min={lastOdometer ?? 0}
               placeholder="e.g., 10000"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { getDatabase, FuelEntry, Settings } from '../db';
 import {
   calculateConsumption,
+  calculateTotals,
   getConsumptionFormatLabel,
   formatNumber,
   convertDistanceFromKm,
@@ -54,10 +55,13 @@ export default function Stats() {
             vehicle_id: activeVehicleId
           }
         })
-        .sort({ date: 'asc' })
+        .sort({ odometer_km: 'asc' })
         .$
         .subscribe((docs: any[]) => {
-          setEntries(docs.map((doc) => doc.toJSON() as FuelEntry));
+          const sortedEntries = docs
+            .map((doc) => doc.toJSON() as FuelEntry)
+            .sort((a, b) => a.odometer_km - b.odometer_km);
+          setEntries(sortedEntries);
           setLoading(false);
         });
     });
@@ -75,7 +79,9 @@ export default function Stats() {
     );
   }
 
-  if (entries.length < 2) {
+  const consumptionData = calculateConsumption(entries, settings.consumptionFormat);
+
+  if (entries.length < 2 || consumptionData.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="max-w-4xl mx-auto">
@@ -99,16 +105,13 @@ export default function Stats() {
     );
   }
 
-  const consumptionData = calculateConsumption(entries, settings.consumptionFormat);
-
   const consumptionValues = consumptionData.map((c) => c.value);
   const avgConsumption =
     consumptionValues.reduce((a, b) => a + b, 0) / consumptionValues.length;
   const minConsumption = Math.min(...consumptionValues);
   const maxConsumption = Math.max(...consumptionValues);
 
-  const totalDistanceKm = entries[entries.length - 1].odometer_km - entries[0].odometer_km;
-  const totalFuelLiters = entries.slice(1).reduce((sum, entry) => sum + entry.liters, 0);
+  const { totalDistanceKm, totalFuelLiters } = calculateTotals(entries);
 
   const totalDistanceDisplay = convertDistanceFromKm(totalDistanceKm, settings.distanceUnit);
   const totalFuelDisplay = convertVolumeFromLiters(totalFuelLiters, settings.volumeUnit);

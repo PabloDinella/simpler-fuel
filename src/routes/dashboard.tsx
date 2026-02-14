@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { signOut, getAuthState } from '../lib/auth';
+import {
+  signOut,
+  getAuthState,
+  subscribeToAuth,
+  type AuthState
+} from '../lib/auth';
 import { getDatabase, FuelEntry, Settings, Vehicle } from '../db';
+import { getReplicationState } from '../db/replication';
 import {
   IconGasStation,
   IconPlus,
@@ -13,21 +19,33 @@ import {
   convertDistanceFromKm,
   convertVolumeFromLiters,
   calculateConsumption,
+  calculateTotals,
   getDistanceUnitLabel,
   getVolumeUnitLabel,
   getConsumptionFormatLabel,
   formatNumber
 } from '../lib/units';
 
+type SyncStatus = 'local' | 'connecting' | 'syncing' | 'synced' | 'error';
+
 export default function Dashboard() {
   const { t } = useTranslation();
-  const authState = getAuthState();
+  const [authState, setAuthState] = useState<AuthState>(() => getAuthState());
   const isLoggedIn = !!authState.user;
   const [entries, setEntries] = useState<FuelEntry[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [activeVehicleId, setActiveVehicleId] = useState('');
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(
+    isLoggedIn ? 'connecting' : 'local'
+  );
+
+  useEffect(() => {
+    return subscribeToAuth((state) => {
+      setAuthState(state);
+    });
+  }, []);
 
   useEffect(() => {
     let settingsSubscription: any;
@@ -62,6 +80,96 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      setSyncStatus('local');
+      return;
+    }
+
+    setSyncStatus('connecting');
+    let attached = false;
+    let fuelActive = false;
+    let vehicleActive = false;
+    let attachRetryTimer: number | null = null;
+    const subscriptions: Array<{ unsubscribe: () => void }> = [];
+
+    const updateStatus = () => {
+      setSyncStatus((prev) =>
+        prev === 'error' ? prev : fuelActive || vehicleActive ? 'syncing' : 'synced'
+      );
+    };
+
+    const tryAttachToReplicationState = () => {
+      if (attached) return true;
+
+      const states = getReplicationState();
+      if (!states?.fuelEntries || !states?.vehicles) {
+        return false;
+      }
+
+      attached = true;
+      const fuelActiveStream = (states.fuelEntries as any).active$;
+      const vehicleActiveStream = (states.vehicles as any).active$;
+
+      // Prime status immediately so we do not get stuck in "Connecting"
+      // when no active$ event is emitted yet.
+      fuelActive = !!fuelActiveStream?.getValue?.();
+      vehicleActive = !!vehicleActiveStream?.getValue?.();
+      updateStatus();
+
+      const fuelActiveSub = fuelActiveStream?.subscribe(
+        (isActive: boolean) => {
+          fuelActive = !!isActive;
+          updateStatus();
+        }
+      );
+      if (fuelActiveSub) subscriptions.push(fuelActiveSub);
+
+      const vehicleActiveSub = vehicleActiveStream?.subscribe(
+        (isActive: boolean) => {
+          vehicleActive = !!isActive;
+          updateStatus();
+        }
+      );
+      if (vehicleActiveSub) subscriptions.push(vehicleActiveSub);
+
+      const fuelErrorSub = (states.fuelEntries as any).error$?.subscribe(
+        (error: any) => {
+          console.error('[Dashboard] Fuel replication error:', error);
+          setSyncStatus('error');
+        }
+      );
+      if (fuelErrorSub) subscriptions.push(fuelErrorSub);
+
+      const vehicleErrorSub = (states.vehicles as any).error$?.subscribe(
+        (error: any) => {
+          console.error('[Dashboard] Vehicle replication error:', error);
+          setSyncStatus('error');
+        }
+      );
+      if (vehicleErrorSub) subscriptions.push(vehicleErrorSub);
+
+      return true;
+    };
+
+    if (!tryAttachToReplicationState()) {
+      attachRetryTimer = window.setInterval(() => {
+        const done = tryAttachToReplicationState();
+        if (done && attachRetryTimer !== null) {
+          window.clearInterval(attachRetryTimer);
+          attachRetryTimer = null;
+        }
+      }, 250);
+    }
+
+    return () => {
+      if (attachRetryTimer !== null) {
+        window.clearInterval(attachRetryTimer);
+      }
+      subscriptions.forEach((sub) => sub.unsubscribe());
+    };
+  }, [isLoggedIn]);
+
+  useEffect(() => {
     let entriesSubscription: any;
 
     if (!activeVehicleId) {
@@ -78,10 +186,16 @@ export default function Dashboard() {
             vehicle_id: activeVehicleId
           }
         })
-        .sort({ date: 'desc' })
+        .sort({ odometer_km: 'desc' })
         .$
         .subscribe((docs: any[]) => {
-          setEntries(docs.map((doc) => doc.toJSON() as FuelEntry));
+          const sortedEntries = docs
+            .map((doc) => doc.toJSON() as FuelEntry)
+            .sort(
+              (a, b) =>
+                b.odometer_km - a.odometer_km
+            );
+          setEntries(sortedEntries);
           setLoading(false);
         });
     });
@@ -147,12 +261,46 @@ export default function Dashboard() {
     settings.consumptionFormat
   );
   const consumptionMap = new Map(consumptionData.map((c) => [c.date, c.value]));
+  const syncStatusMap: Record<
+    SyncStatus,
+    { label: string; classes: string; dotClasses: string; title: string }
+  > = {
+    local: {
+      label: t('app.localOnly'),
+      classes: 'bg-amber-100 text-amber-900 border-amber-300',
+      dotClasses: 'bg-amber-500',
+      title: 'Cloud sync is disabled until you sign in'
+    },
+    connecting: {
+      label: 'Connecting',
+      classes: 'bg-blue-100 text-blue-900 border-blue-300',
+      dotClasses: 'bg-blue-500 animate-pulse',
+      title: 'Connecting to Supabase'
+    },
+    syncing: {
+      label: 'Syncing',
+      classes: 'bg-sky-100 text-sky-900 border-sky-300',
+      dotClasses: 'bg-sky-500 animate-pulse',
+      title: 'Changes are being synchronized'
+    },
+    synced: {
+      label: 'Synced',
+      classes: 'bg-green-100 text-green-900 border-green-300',
+      dotClasses: 'bg-green-500',
+      title: 'Cloud sync is up to date'
+    },
+    error: {
+      label: 'Sync error',
+      classes: 'bg-red-100 text-red-900 border-red-300',
+      dotClasses: 'bg-red-500',
+      title: `Cloud sync encountered an error`
+    }
+  };
+  const statusConfig = syncStatusMap[syncStatus];
 
   let stats = null;
-  if (entries.length >= 2) {
-    const sortedEntries = [...entries].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+  if (entries.length >= 2 && consumptionData.length > 0) {
+    const { totalDistanceKm, totalFuelLiters } = calculateTotals(entries);
     const consumptionValues = consumptionData.map((c) => c.value);
     const avgConsumption =
       consumptionValues.reduce((a, b) => a + b, 0) / consumptionValues.length;
@@ -160,12 +308,6 @@ export default function Dashboard() {
       settings.consumptionFormat === 'L_per_100km'
         ? Math.min(...consumptionValues)
         : Math.max(...consumptionValues);
-    const totalDistanceKm =
-      sortedEntries[sortedEntries.length - 1].odometer_km -
-      sortedEntries[0].odometer_km;
-    const totalFuelLiters = sortedEntries
-      .slice(1)
-      .reduce((sum, entry) => sum + entry.liters, 0);
 
     stats = {
       avgConsumption,
@@ -190,11 +332,13 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
               {t('app.title')}
             </h1>
-            {!isLoggedIn && (
-              <span className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 text-xs px-2 py-1 rounded-full">
-                {t('app.localOnly')}
-              </span>
-            )}
+            <span
+              className={`inline-flex items-center border text-xs px-2 py-1 rounded-full ${statusConfig.classes}`}
+              title={statusConfig.title}
+            >
+              <span className={`inline-block w-2 h-2 rounded-full mr-2 ${statusConfig.dotClasses}`} />
+              {statusConfig.label}
+            </span>
           </div>
           {isLoggedIn ? (
             <button

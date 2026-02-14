@@ -7,6 +7,38 @@ let supabaseClient: SupabaseClient | null = null;
 let fuelEntriesReplicationState: RxSupabaseReplicationState<any> | null = null;
 let vehiclesReplicationState: RxSupabaseReplicationState<any> | null = null;
 
+function extractErrorText(error: any): string {
+  if (!error) return 'Unknown replication error';
+
+  if (typeof error === 'string') return error;
+  if (typeof error.message === 'string' && error.message.trim()) return error.message;
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+function formatReplicationSetupError(error: any): string {
+  const raw = extractErrorText(error);
+  const normalized = raw.toLowerCase();
+
+  const missingTables =
+    normalized.includes('pgrst205') ||
+    normalized.includes('schema cache') ||
+    (normalized.includes('relation') && normalized.includes('does not exist')) ||
+    (normalized.includes('table') &&
+      normalized.includes('does not exist') &&
+      (normalized.includes('vehicles') || normalized.includes('fuel_entries')));
+
+  if (missingTables) {
+    return 'Supabase tables are missing. Run supabase-schema.sql in your Supabase SQL Editor, then restart the app.';
+  }
+
+  return `Supabase replication setup failed: ${raw}`;
+}
+
 export function getSupabaseClient(): SupabaseClient {
   if (!supabaseClient) {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -108,6 +140,9 @@ export async function setupReplication(
     console.log('[Replication] Initial sync complete');
   } catch (error) {
     console.error('[Replication] Initial sync failed', error);
+    const setupError = formatReplicationSetupError(error);
+    await stopReplication();
+    throw new Error(setupError);
   }
 
   return {
